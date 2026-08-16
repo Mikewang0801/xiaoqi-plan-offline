@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.gradle/
+*.tsbuildinfo
+android/.gradle/
+android/build/
+android/app/build/
+ios/App/DerivedData/
+build-output/
+.android-user-home/
+.gradle-user-home/
+.android-toolchain/
+local.properties
+*.jks
+*.keystore
+.env*
+!.env.offline
