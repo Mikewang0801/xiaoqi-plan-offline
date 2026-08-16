@@ -1,29 +1,50 @@
 # 小淇计划 · 离线版
 
-一款完全离线、本地优先的 Android 学习计划与番茄专注应用。完成任务可以投喂小猫“小淇”，累计食物、等级和连续打卡天数。
+[简体中文](README.md) | [English](README_EN.md)
+
+一款完全离线、本地优先的 Android 学习计划与番茄专注应用。完成任务可以投喂小猫“小淇”，让日常学习更有陪伴感。
 
 ![小淇计划图标](assets/icon.png)
 
-## 功能
+## 功能特色
 
-- 今日计划、周表拖动、历史和学习统计
-- 独立任务计时与番茄钟
-- 小淇投喂、等级和连续打卡养成
+- 今日计划、周表拖动、历史记录和学习统计
+- 单任务累计计时与番茄钟
+- 小淇投喂、等级成长和连续打卡
 - 重复任务、自动顺延与系统通知
-- 深浅主题、JSON 导入导出
+- 浅色、深色及跟随系统主题
+- JSON 数据导入与导出
 - 无账号、广告、遥测、云同步或 AI 接口
 - Android 清单不申请 `INTERNET` 权限
 
+## 隐私设计
+
+任务、番茄钟和小淇成长数据只保存在当前设备。应用不会上传学习内容；卸载或清除应用数据前，请先导出 JSON 备份。
+
+本仓库不包含：
+
+- 在线学习复盘 API
+- 大模型或第三方服务密钥
+- Android 发布证书及口令
+- 用户计划、笔记或备份数据
+
+## 技术栈
+
+- React 19 + TypeScript + Vite 8
+- Capacitor 8
+- Android Gradle Plugin 8.13
+- Android：最低 API 24，目标 API 36
+
 ## 本地运行
 
-需要 Node.js 20+。
+需要 Node.js 20 或更高版本。
 
 ```powershell
 npm ci
 npm run dev
 ```
 
-生产构建：
+浏览器生产构建：
 
 ```powershell
 npm run build
@@ -31,7 +52,15 @@ npm run build
 
 ## Android 构建
 
-需要 JDK 21、Android SDK Platform 36 和 Build Tools 35/36。也可以先运行 `准备本地Android工具链.ps1`，把工具链下载到项目内的忽略目录。
+需要 JDK 21、Android SDK Platform 36 和 Build Tools 35/36。
+
+如果本机尚未配置 Android 环境，可以先运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\准备本地Android工具链.ps1
+```
+
+然后执行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\构建离线版.ps1 `
@@ -39,12 +68,26 @@ powershell -ExecutionPolicy Bypass -File .\构建离线版.ps1 `
   -AndroidSdk 'Android SDK目录'
 ```
 
-调试 APK 输出到 `build-output/xiaoqi-plan-offline-debug.apk`。正式发布请使用自己的 keystore 签名，证书和口令不要提交到仓库。
+调试 APK 输出到：
 
-## 隐私说明
+```text
+build-output/xiaoqi-plan-offline-debug.apk
+```
 
-任务、番茄钟和小淇成长数据只保存在当前设备。卸载或清除应用数据前请先导出 JSON 备份。本仓库不包含在线复盘 API、模型密钥、发布证书或用户数据。
+正式发布时请使用自己的私有 keystore 签名，证书及口令不要提交到仓库。
 
-## 许可证
+## 项目结构
 
-[MIT](LICENSE)
+```text
+xiaoqi-plan-offline/
+├─ src/                         React 应用源码
+├─ public/                      离线 PWA 资源
+├─ assets/                      图标和启动图源文件
+├─ android/                     Android 原生工程
+├─ 构建离线版.ps1               Windows 一键构建脚本
+└─ 准备本地Android工具链.ps1    可选的本地工具链准备脚本
+```
+
+## 开源许可证
+
+本项目采用 [MIT License](LICENSE)。欢迎学习、修改和二次开发，并请保留原始版权与许可证声明。
