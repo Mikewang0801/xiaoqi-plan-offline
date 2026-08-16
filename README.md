@@ -6,6 +6,15 @@
 
 ![小淇计划图标](assets/icon.png)
 
+## 下载安装
+
+[**下载 Android APK v2.0.0**](https://github.com/Mikewang0801/xiaoqi-plan-offline/releases/download/v2.0.0/xiaoqi-plan-offline-v2.0.0.apk)
+
+- 支持 Android 7.0（API 24）及更高版本
+- SHA-256：`3EEEC21828FBD7977B69776B27BBAEEF1647499705A04EA831A6E19A0564308E`
+- 若系统阻止安装，请只为当前文件管理器开启“允许来自此来源”
+- 安装包无联网权限，任务与学习数据只保存在当前设备
+
 ## 功能特色
 
 - 今日计划、周表拖动、历史记录和学习统计

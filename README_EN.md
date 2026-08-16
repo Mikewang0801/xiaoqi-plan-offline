@@ -6,6 +6,15 @@ A fully offline, local-first Android study planner and Pomodoro app. Completing 
 
 ![Xiaoqi Plan icon](assets/icon.png)
 
+## Download and Install
+
+[**Download Android APK v2.0.0**](https://github.com/Mikewang0801/xiaoqi-plan-offline/releases/download/v2.0.0/xiaoqi-plan-offline-v2.0.0.apk)
+
+- Requires Android 7.0 (API 24) or later
+- SHA-256: `3EEEC21828FBD7977B69776B27BBAEEF1647499705A04EA831A6E19A0564308E`
+- If Android blocks the installation, allow installs from the current file manager only
+- The APK has no network permission; plans and study data stay on the device
+
 ## Features
 
 - Daily planner, draggable weekly calendar, history, and study statistics
