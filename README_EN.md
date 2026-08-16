@@ -100,3 +100,9 @@ xiaoqi-plan-offline/
 ## License
 
 Licensed under the [MIT License](LICENSE). You may study, modify, and redistribute the project while retaining the original copyright and license notice.
+
+## Contact
+
+- QQ: 2361319392
+- WeChat: 15224700421
+- Email: [15224700421@163.com](mailto:15224700421@163.com)
