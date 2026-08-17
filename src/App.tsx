@@ -7,6 +7,7 @@ type Recurrence = "none" | "daily" | "weekdays" | "weekly" | "monthly";
 type Theme = "light" | "dark" | "system";
 type ViewName = "today" | "week" | "pomodoro" | "review" | "history" | "stats" | "settings";
 type PomodoroMode = "focus" | "short" | "long";
+type TimerDirection = "countdown" | "stopwatch";
 
 type MindNode = {
   label: string;
@@ -36,7 +37,9 @@ type PetState = {
 
 type PomodoroState = {
   mode: PomodoroMode;
+  direction: TimerDirection;
   remainingSeconds: number;
+  elapsedSeconds: number;
   running: boolean;
   checkpointAt: string | null;
   focusMinutes: number;
@@ -138,7 +141,9 @@ const COLORS = ["#EF858A", "#72B79D", "#F2B45F", "#8DA9D6", "#B598D0", "#E58A69"
 const DEFAULT_PET: PetState = { name: "小淇", food: 0, streak: 0, lastFedDate: "", fedTaskIds: [] };
 const DEFAULT_POMODORO: PomodoroState = {
   mode: "focus",
+  direction: "countdown",
   remainingSeconds: 25 * 60,
+  elapsedSeconds: 0,
   running: false,
   checkpointAt: null,
   focusMinutes: 25,
@@ -223,6 +228,11 @@ function durationText(value: number) {
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds % 60)}`;
 }
 
+function timerText(value: number) {
+  const text = durationText(value);
+  return value >= 3600 ? text : text.slice(3);
+}
+
 function uid() {
   return globalThis.crypto?.randomUUID?.().replaceAll("-", "") ?? `${Date.now()}${Math.random()}`;
 }
@@ -269,6 +279,9 @@ function checkpointPomodoro(state: PomodoroState) {
   if (!state.running || !state.checkpointAt) return state;
   const elapsed = Math.max(0, Math.floor((Date.now() - Date.parse(state.checkpointAt)) / 1000));
   if (!Number.isFinite(elapsed) || elapsed === 0) return state;
+  if (state.direction === "stopwatch") {
+    return { ...state, elapsedSeconds: state.elapsedSeconds + elapsed, checkpointAt: nowText() };
+  }
   if (elapsed < state.remainingSeconds) {
     return { ...state, remainingSeconds: state.remainingSeconds - elapsed, checkpointAt: nowText() };
   }
@@ -368,10 +381,12 @@ function normalizeState(raw: Record<string, unknown>): AppState {
   const pomodoro = {
     ...DEFAULT_POMODORO,
     mode,
+    direction: rawPomodoro.direction === "stopwatch" ? "stopwatch" as TimerDirection : "countdown" as TimerDirection,
     focusMinutes: Number(rawPomodoro.focusMinutes ?? DEFAULT_POMODORO.focusMinutes),
     shortMinutes: Number(rawPomodoro.shortMinutes ?? DEFAULT_POMODORO.shortMinutes),
     longMinutes: Number(rawPomodoro.longMinutes ?? DEFAULT_POMODORO.longMinutes),
     completedSessions: Number(rawPomodoro.completedSessions ?? 0),
+    elapsedSeconds: Number(rawPomodoro.elapsedSeconds ?? 0),
   };
   pomodoro.remainingSeconds = Number(rawPomodoro.remainingSeconds ?? pomodoroDuration(pomodoro));
   return {
@@ -579,6 +594,8 @@ export default function Home() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [drag, setDrag] = useState<DragState | null>(null);
+  const [petAwake, setPetAwake] = useState(false);
+  const [petCheering, setPetCheering] = useState(false);
   const [toast, setToast] = useState("");
   const [online, setOnline] = useState(true);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -681,6 +698,10 @@ export default function Home() {
   }, [currentDate, hydrated]);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
+
+  useEffect(() => {
     const timer = window.setInterval(() => setData((previous) => {
       const focused = checkpoint(previous);
       const pomodoro = checkpointPomodoro(focused.pomodoro);
@@ -694,6 +715,12 @@ export default function Home() {
     const timer = window.setTimeout(() => setToast(""), 2800);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (!petCheering) return;
+    const timer = window.setTimeout(() => setPetCheering(false), 1400);
+    return () => window.clearTimeout(timer);
+  }, [petCheering]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -753,7 +780,10 @@ export default function Home() {
   const petProgress = data.pet.food % 5;
   const todayCompleted = data.tasks.filter((task) => task.date === localISODate() && task.completed).length;
   const pomodoroTotal = Math.max(1, pomodoroDuration(data.pomodoro));
-  const pomodoroProgress = Math.max(0, Math.min(1, 1 - data.pomodoro.remainingSeconds / pomodoroTotal));
+  const pomodoroDisplaySeconds = data.pomodoro.direction === "stopwatch" ? data.pomodoro.elapsedSeconds : data.pomodoro.remainingSeconds;
+  const pomodoroProgress = Math.max(0, Math.min(1, data.pomodoro.direction === "stopwatch"
+    ? data.pomodoro.elapsedSeconds / pomodoroTotal
+    : 1 - data.pomodoro.remainingSeconds / pomodoroTotal));
   const currentReview = [...data.reviews].reverse().find((item) => item.date === reviewDate) ?? null;
   const reviewTasks = data.tasks.filter((task) => task.date === reviewDate);
 
@@ -855,7 +885,11 @@ export default function Home() {
         tasks: previous.tasks.map((task) => task.id === taskId ? { ...task, completed: !task.completed, updatedAt: nowText() } : task),
       };
     });
-    if (willFeed) setToast("任务完成！小淇收到一份小鱼干 ♡");
+    if (willFeed) {
+      setPetAwake(true);
+      setPetCheering(true);
+      setToast("任务完成！小淇收到一份小鱼干 ♡");
+    }
   }
 
   function deleteTasks(ids: string[]) {
@@ -940,6 +974,7 @@ export default function Home() {
         ...previous.pomodoro,
         mode,
         remainingSeconds: pomodoroDuration(previous.pomodoro, mode),
+        elapsedSeconds: 0,
         running: false,
         checkpointAt: null,
       },
@@ -949,7 +984,9 @@ export default function Home() {
   function togglePomodoro() {
     setData((previous) => {
       const saved = checkpointPomodoro(previous.pomodoro);
-      const remainingSeconds = saved.remainingSeconds || pomodoroDuration(saved);
+      const remainingSeconds = saved.direction === "countdown"
+        ? saved.remainingSeconds || pomodoroDuration(saved)
+        : saved.remainingSeconds;
       return {
         ...previous,
         pomodoro: {
@@ -968,10 +1005,46 @@ export default function Home() {
       pomodoro: {
         ...previous.pomodoro,
         remainingSeconds: pomodoroDuration(previous.pomodoro),
+        elapsedSeconds: 0,
         running: false,
         checkpointAt: null,
       },
     }));
+  }
+
+  function setPomodoroDirection(direction: TimerDirection) {
+    setData((previous) => ({
+      ...previous,
+      pomodoro: {
+        ...previous.pomodoro,
+        direction,
+        remainingSeconds: pomodoroDuration(previous.pomodoro),
+        elapsedSeconds: 0,
+        running: false,
+        checkpointAt: null,
+      },
+    }));
+  }
+
+  function setPomodoroMinutes(mode: PomodoroMode, value: number) {
+    const key = mode === "focus" ? "focusMinutes" : mode === "short" ? "shortMinutes" : "longMinutes";
+    setData((previous) => ({
+      ...previous,
+      pomodoro: {
+        ...previous.pomodoro,
+        [key]: value,
+        remainingSeconds: previous.pomodoro.mode === mode ? value * 60 : previous.pomodoro.remainingSeconds,
+        elapsedSeconds: previous.pomodoro.mode === mode ? 0 : previous.pomodoro.elapsedSeconds,
+        running: false,
+        checkpointAt: null,
+      },
+    }));
+  }
+
+  function wakePet() {
+    setPetAwake(true);
+    setPetCheering(true);
+    setToast(dayTasks.length ? `小淇醒啦！今天有 ${dayTasks.length} 项计划，一起稳稳完成` : "小淇醒啦！先为今天安排一项小计划吧");
   }
 
   function selectReviewFiles(files: FileList | null, kind: "review" | "knowledge") {
@@ -1173,12 +1246,17 @@ export default function Home() {
               <button onClick={() => setCurrentDate(addDays(currentDate, 1))}>›</button>
             </div>
 
-            <section className="pet-card">
-              <div className="pet-avatar"><img src="/icon-192.png" alt="小淇猫咪" /><span>Lv.{petLevel}</span></div>
+            <section className={`pet-card ${petAwake ? "awake" : "sleeping"} ${petCheering ? "cheering" : ""}`}>
+              <button className="pet-avatar" type="button" onClick={wakePet} aria-label={petAwake ? "和小淇互动" : "唤醒小淇"}>
+                <span className="pet-sparkles" aria-hidden="true">✦</span>
+                <img src="/icon-192.png" alt="小淇猫咪" />
+                <span className="pet-level">Lv.{petLevel}</span>
+                {!petAwake && <span className="pet-sleep" aria-hidden="true">Zzz</span>}
+              </button>
               <div className="pet-copy">
                 <span className="eyebrow">STUDY BUDDY</span>
-                <h1>{todayCompleted ? `小淇今天吃到 ${todayCompleted} 份小鱼干` : "小淇在等你一起学习"}</h1>
-                <p>{data.pet.streak ? `已经连续打卡 ${data.pet.streak} 天，完成任务就能继续投喂。` : "完成一项学习任务，就可以投喂小淇。"}</p>
+                <h1>{!petAwake ? "点一下唤醒小淇" : todayCompleted ? `小淇今天吃到 ${todayCompleted} 份小鱼干` : "小淇准备好陪你学习啦"}</h1>
+                <p>{!petAwake ? "让小淇用元气问候陪你开启今天。" : data.pet.streak ? `已经连续打卡 ${data.pet.streak} 天，完成任务就能继续投喂。` : `今天有 ${dayTasks.length} 项计划，完成一项就能投喂小淇。`}</p>
                 <div className="pet-progress"><i style={{ width: `${petProgress / 5 * 100}%` }} /><span>{petProgress}/5 距离升级</span></div>
               </div>
               <button className="pet-focus-button" onClick={() => setView("pomodoro")}>去专注</button>
@@ -1225,21 +1303,23 @@ export default function Home() {
 
         {view === "week" && (
           <>
-            <div className="date-navigator compact">
+            <div className="week-toolbar">
               <button onClick={() => setCurrentDate(addDays(currentDate, -7))}>‹</button>
-              <button className="date-title" onClick={() => setCurrentDate(localISODate())}>
+              <button className="week-range" onClick={() => setCurrentDate(localISODate())}>
                 <strong>{dateLabel(weekStart)} — {dateLabel(weekEnd)}</strong>
-                <small>长按任务块拖动，拖底边调整时长</small>
+                <small>日期栏固定 · 左右滑动查看 · 长按拖动任务</small>
               </button>
               <button onClick={() => setCurrentDate(addDays(currentDate, 7))}>›</button>
             </div>
             <div className="week-scroll">
               <div className="week-board" style={{ width: TIME_LEFT + DAY_WIDTH * 7, height: WEEK_HEADER + (data.settings.axisEnd - data.settings.axisStart) * PIXELS_PER_MINUTE }}>
-                <div className="week-corner" />
-                {WEEKDAYS.map((name, index) => {
-                  const day = addDays(weekStart, index);
-                  return <button key={day} className={`week-day ${day === localISODate() ? "today" : ""}`} style={{ left: TIME_LEFT + index * DAY_WIDTH, width: DAY_WIDTH }} onClick={() => { setCurrentDate(day); setView("today"); }}><strong>周{name}</strong><span>{parseDate(day).getMonth() + 1}/{parseDate(day).getDate()}</span></button>;
-                })}
+                <div className="week-header-row">
+                  <div className="week-corner"><span>时间</span></div>
+                  {WEEKDAYS.map((name, index) => {
+                    const day = addDays(weekStart, index);
+                    return <button key={day} className={`week-day ${day === localISODate() ? "today" : ""}`} style={{ left: TIME_LEFT + index * DAY_WIDTH, width: DAY_WIDTH }} onClick={() => { setCurrentDate(day); setView("today"); }}><strong>周{name}</strong><span>{parseDate(day).getMonth() + 1}/{parseDate(day).getDate()}</span></button>;
+                  })}
+                </div>
                 {Array.from({ length: Math.floor((data.settings.axisEnd - data.settings.axisStart) / data.settings.segmentMinutes) + 1 }, (_, index) => {
                   const minute = data.settings.axisStart + index * data.settings.segmentMinutes;
                   const top = WEEK_HEADER + (minute - data.settings.axisStart) * PIXELS_PER_MINUTE;
@@ -1287,21 +1367,31 @@ export default function Home() {
         {view === "pomodoro" && (
           <>
             <div className="page-title pomodoro-title"><span className="eyebrow">POMODORO</span><h1>番茄专注屋</h1><p>一次只做好一件事，小淇会安静陪着你。</p></div>
+            <div className="timer-direction" aria-label="计时方式">
+              <button className={data.pomodoro.direction === "countdown" ? "active" : ""} onClick={() => setPomodoroDirection("countdown")}><strong>倒计时</strong><small>到点提醒</small></button>
+              <button className={data.pomodoro.direction === "stopwatch" ? "active" : ""} onClick={() => setPomodoroDirection("stopwatch")}><strong>正计时</strong><small>自由累计</small></button>
+            </div>
             <div className="pomodoro-tabs">
-              {([["focus", "专注 25"], ["short", "短休 5"], ["long", "长休 15"]] as [PomodoroMode, string][]).map(([mode, label]) => (
+              {([["focus", `专注 ${data.pomodoro.focusMinutes}`], ["short", `短休 ${data.pomodoro.shortMinutes}`], ["long", `长休 ${data.pomodoro.longMinutes}`]] as [PomodoroMode, string][]).map(([mode, label]) => (
                 <button key={mode} className={data.pomodoro.mode === mode ? "active" : ""} onClick={() => choosePomodoro(mode)}>{label}</button>
               ))}
             </div>
             <section className="pomodoro-card">
               <div className="focus-orbit" style={{ "--progress": `${pomodoroProgress * 360}deg` } as React.CSSProperties}>
                 <div className="focus-clock">
-                  <img src="/icon-192.png" alt="专注中的小淇" />
-                  <small>{data.pomodoro.mode === "focus" ? "专注中" : "休息一下"}</small>
-                  <strong>{durationText(data.pomodoro.remainingSeconds).slice(3)}</strong>
+                  <img className={data.pomodoro.running ? "timer-pet-awake" : ""} src="/icon-192.png" alt="专注中的小淇" />
+                  <small>{data.pomodoro.direction === "stopwatch" ? "正向计时" : data.pomodoro.mode === "focus" ? "专注中" : "休息一下"}</small>
+                  <strong>{timerText(pomodoroDisplaySeconds)}</strong>
                 </div>
               </div>
               <p>{activeTask ? `当前任务：${activeTask.title}` : "可先在今天页面选中一项任务"}</p>
-              <div className="pomodoro-actions"><button className="soft-button" onClick={resetPomodoro}>重置</button><button className={`focus-main-button ${data.pomodoro.running ? "pause" : ""}`} onClick={togglePomodoro}>{data.pomodoro.running ? "暂停一下" : data.pomodoro.remainingSeconds ? "开始专注" : "再来一轮"}</button></div>
+              <div className="pomodoro-actions"><button className="soft-button" onClick={resetPomodoro}>重置</button><button className={`focus-main-button ${data.pomodoro.running ? "pause" : ""}`} onClick={togglePomodoro}>{data.pomodoro.running ? "暂停一下" : data.pomodoro.direction === "stopwatch" ? (data.pomodoro.elapsedSeconds ? "继续计时" : "开始正计时") : data.pomodoro.remainingSeconds ? "开始专注" : "再来一轮"}</button></div>
+            </section>
+            <section className="pomodoro-settings">
+              <div><strong>本页设置</strong><small>修改后当前计时会重置</small></div>
+              <label>专注<select value={data.pomodoro.focusMinutes} onChange={(event) => setPomodoroMinutes("focus", Number(event.target.value))}>{[20, 25, 30, 45, 50, 60].map((value) => <option key={value} value={value}>{value} 分钟</option>)}</select></label>
+              <label>短休<select value={data.pomodoro.shortMinutes} onChange={(event) => setPomodoroMinutes("short", Number(event.target.value))}>{[5, 10, 15].map((value) => <option key={value} value={value}>{value} 分钟</option>)}</select></label>
+              <label>长休<select value={data.pomodoro.longMinutes} onChange={(event) => setPomodoroMinutes("long", Number(event.target.value))}>{[10, 15, 20, 30].map((value) => <option key={value} value={value}>{value} 分钟</option>)}</select></label>
             </section>
             <div className="focus-stats">
               <div><strong>{data.pomodoro.completedSessions}</strong><span>累计番茄</span></div>
@@ -1385,8 +1475,6 @@ export default function Home() {
               <label><span><strong>时间轴起点</strong><small>{minutesToTime(data.settings.axisStart)}</small></span><input type="time" value={minutesToTime(data.settings.axisStart)} onChange={(event) => setData((previous) => ({ ...previous, settings: { ...previous.settings, axisStart: timeToMinutes(event.target.value) } }))} /></label>
               <label><span><strong>时间轴终点</strong><small>{minutesToTime(data.settings.axisEnd)}</small></span><input type="time" value={data.settings.axisEnd === 1440 ? "23:59" : minutesToTime(data.settings.axisEnd)} onChange={(event) => setData((previous) => ({ ...previous, settings: { ...previous.settings, axisEnd: Math.max(previous.settings.axisStart + 60, timeToMinutes(event.target.value)) } }))} /></label>
               <label><span><strong>网格分段</strong><small>拖拽吸附精度</small></span><select value={data.settings.segmentMinutes} onChange={(event) => setData((previous) => ({ ...previous, settings: { ...previous.settings, segmentMinutes: Number(event.target.value) as 15 | 30 | 60 } }))}><option value={15}>15 分钟</option><option value={30}>30 分钟</option><option value={60}>60 分钟</option></select></label>
-              <label><span><strong>番茄专注时长</strong><small>每轮完整专注</small></span><select value={data.pomodoro.focusMinutes} onChange={(event) => setData((previous) => { const focusMinutes = Number(event.target.value); return { ...previous, pomodoro: { ...previous.pomodoro, focusMinutes, remainingSeconds: previous.pomodoro.mode === "focus" ? focusMinutes * 60 : previous.pomodoro.remainingSeconds, running: false, checkpointAt: null } }; })}>{[20, 25, 30, 45, 50].map((value) => <option key={value} value={value}>{value} 分钟</option>)}</select></label>
-              <label><span><strong>短休时长</strong><small>专注间隙放松</small></span><select value={data.pomodoro.shortMinutes} onChange={(event) => setData((previous) => { const shortMinutes = Number(event.target.value); return { ...previous, pomodoro: { ...previous.pomodoro, shortMinutes, remainingSeconds: previous.pomodoro.mode === "short" ? shortMinutes * 60 : previous.pomodoro.remainingSeconds, running: false, checkpointAt: null } }; })}>{[5, 10, 15].map((value) => <option key={value} value={value}>{value} 分钟</option>)}</select></label>
               <label><span><strong>自动顺延</strong><small>旧未完成任务移到今天末尾</small></span><button className={`switch bare ${data.settings.autoRollover ? "on" : ""}`} onClick={() => setData((previous) => prepareState({ ...previous, settings: { ...previous.settings, autoRollover: !previous.settings.autoRollover } }, localISODate()))}><span /></button></label>
             </div>
             <div className="settings-card action-list">

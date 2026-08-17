@@ -8,10 +8,10 @@
 
 ## 下载安装
 
-[**下载 Android APK v2.0.0**](https://github.com/Mikewang0801/xiaoqi-plan-offline/releases/download/v2.0.0/xiaoqi-plan-offline-v2.0.0.apk)
+[**下载 Android APK v2.1.0**](https://github.com/Mikewang0801/xiaoqi-plan-offline/releases/download/v2.1.0/xiaoqi-plan-offline-v2.1.0.apk)
 
 - 支持 Android 7.0（API 24）及更高版本
-- SHA-256：`3EEEC21828FBD7977B69776B27BBAEEF1647499705A04EA831A6E19A0564308E`
+- SHA-256：`D722D780202AD68D3BD1A9EFA78DB784BDC1AF46F68D8E31B189C1339AF6A32D`
 - 若系统阻止安装，请只为当前文件管理器开启“允许来自此来源”
 - 安装包无联网权限，任务与学习数据只保存在当前设备
 
@@ -19,6 +19,9 @@
 
 - 今日计划、周表拖动、历史记录和学习统计
 - 单任务累计计时与番茄钟
+- 番茄钟支持倒计时与正向计时，时长可在专注页直接调整
+- 周表日期栏固定，支持左右滑动浏览日期
+- 点击唤醒动态小淇，完成任务触发庆祝动作
 - 小淇投喂、等级成长和连续打卡
 - 重复任务、自动顺延与系统通知
 - 浅色、深色及跟随系统主题

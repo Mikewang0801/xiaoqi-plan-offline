@@ -524,13 +524,14 @@ button {
 }
 
 .week-scroll {
-  height: calc(100dvh - 170px);
+  height: calc(100dvh - 176px);
   overflow: auto;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: var(--shadow);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--brand-soft) 35%, var(--surface)), var(--surface) 120px);
+  border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
+  border-radius: 24px;
+  box-shadow: 0 14px 34px rgba(126, 77, 68, 0.1);
   overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .week-board {
@@ -539,11 +540,11 @@ button {
   background: var(--surface);
 }
 
-.week-corner,
-.week-day {
+.week-header-row {
   position: sticky;
-  z-index: 7;
+  z-index: 8;
   top: 0;
+  width: 100%;
   height: 46px;
   background: color-mix(in srgb, var(--surface) 94%, transparent);
   border-bottom: 1px solid var(--line);
@@ -551,12 +552,25 @@ button {
 }
 
 .week-corner {
+  position: sticky;
+  z-index: 10;
+  top: 0;
   left: 0;
   width: 54px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--paper) 96%, transparent);
+  border-right: 1px solid var(--line);
+  font-size: 8px;
+  font-weight: 800;
 }
 
 .week-day {
   position: absolute;
+  top: 0;
+  height: 46px;
   display: grid;
   place-content: center;
   gap: 1px;
@@ -576,7 +590,18 @@ button {
 
 .week-day.today {
   color: var(--brand);
-  background: var(--brand-soft);
+  background: linear-gradient(180deg, var(--brand-soft), color-mix(in srgb, var(--brand-soft) 48%, var(--surface)));
+}
+
+.week-day.today::after {
+  content: "";
+  position: absolute;
+  left: 35%;
+  right: 35%;
+  bottom: 3px;
+  height: 3px;
+  background: var(--brand);
+  border-radius: 999px;
 }
 
 .week-line {
@@ -588,12 +613,13 @@ button {
 }
 
 .week-line span {
-  position: absolute;
+  position: sticky;
   top: -7px;
   left: 7px;
+  z-index: 4;
   width: 40px;
   color: var(--muted);
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
   font-family: Georgia, serif;
   font-size: 9px;
 }
@@ -615,11 +641,41 @@ button {
   padding: 7px 7px 11px;
   color: #fff;
   border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 7px 13px 7px 7px;
-  box-shadow: 0 5px 12px rgba(28, 45, 44, 0.16);
+  border-radius: 12px;
+  box-shadow: 0 7px 16px rgba(28, 45, 44, 0.17);
   touch-action: none;
   user-select: none;
 }
+
+.week-toolbar {
+  display: grid;
+  grid-template-columns: 42px 1fr 42px;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 10px;
+}
+
+.week-toolbar > button:not(.week-range) {
+  width: 42px;
+  height: 42px;
+  color: var(--brand);
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
+  border-radius: 15px;
+  box-shadow: 0 6px 16px rgba(126, 77, 68, 0.08);
+  font-size: 25px;
+}
+
+.week-range {
+  display: grid;
+  gap: 3px;
+  padding: 6px 10px;
+  color: var(--ink);
+  background: transparent;
+}
+
+.week-range strong { font-size: 13px; }
+.week-range small { color: var(--muted); font-size: 8px; }
 
 .week-task.active {
   outline: 3px solid #ffd166;
@@ -1427,6 +1483,9 @@ button {
 .pet-avatar {
   position: relative;
   align-self: center;
+  padding: 0;
+  background: transparent;
+  border-radius: 24px;
 }
 
 .pet-avatar img {
@@ -1439,7 +1498,7 @@ button {
   box-shadow: 0 10px 24px rgba(133, 80, 63, 0.16);
 }
 
-.pet-avatar span {
+.pet-level {
   position: absolute;
   right: -5px;
   bottom: -5px;
@@ -1451,6 +1510,53 @@ button {
   font-size: 9px;
   font-weight: 900;
 }
+
+.pet-sparkles,
+.pet-sleep {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.pet-sparkles {
+  top: -8px;
+  left: -5px;
+  color: var(--sunny);
+  font-size: 22px;
+  opacity: 0;
+}
+
+.pet-sleep {
+  top: -8px;
+  right: -12px;
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 900;
+  animation: pet-sleep 2.2s ease-in-out infinite;
+}
+
+.pet-card.sleeping .pet-avatar img {
+  filter: saturate(0.68) brightness(0.96);
+  animation: pet-breathe 2.8s ease-in-out infinite;
+}
+
+.pet-card.awake .pet-avatar img {
+  animation: pet-float 2.4s ease-in-out infinite;
+}
+
+.pet-card.cheering .pet-avatar img {
+  animation: pet-cheer 700ms ease-in-out 2;
+}
+
+.pet-card.cheering .pet-sparkles {
+  animation: pet-sparkle 700ms ease-out 2;
+}
+
+@keyframes pet-breathe { 0%, 100% { transform: scale(0.97) rotate(-1deg); } 50% { transform: scale(1.02) rotate(1deg); } }
+@keyframes pet-sleep { 0%, 100% { opacity: 0.35; transform: translateY(4px) scale(0.85); } 50% { opacity: 1; transform: translateY(-4px) scale(1); } }
+@keyframes pet-float { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-5px) rotate(1deg); } }
+@keyframes pet-cheer { 0%, 100% { transform: translateY(0) rotate(0); } 35% { transform: translateY(-11px) rotate(-6deg); } 70% { transform: translateY(-3px) rotate(6deg); } }
+@keyframes pet-sparkle { 0% { opacity: 0; transform: scale(0.4) rotate(0); } 45% { opacity: 1; transform: scale(1.15) rotate(45deg); } 100% { opacity: 0; transform: scale(1.5) rotate(90deg); } }
 
 .pet-copy {
   position: relative;
@@ -1541,6 +1647,30 @@ button {
   border-radius: 16px;
 }
 
+.timer-direction {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 7px;
+  margin: -5px 0 9px;
+  padding: 5px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+.timer-direction button {
+  display: grid;
+  gap: 2px;
+  padding: 9px;
+  color: var(--muted);
+  background: transparent;
+  border-radius: 13px;
+}
+
+.timer-direction button strong { font-size: 11px; }
+.timer-direction button small { font-size: 8px; }
+.timer-direction button.active { color: #fff; background: linear-gradient(135deg, var(--brand), #f39a83); box-shadow: 0 8px 16px rgba(231, 111, 118, 0.2); }
+
 .pomodoro-tabs button {
   padding: 10px 5px;
   color: var(--muted);
@@ -1606,6 +1736,9 @@ button {
   box-shadow: 0 10px 24px rgba(179, 92, 78, 0.15);
 }
 
+.focus-clock img.timer-pet-awake { animation: timer-pet 1.8s ease-in-out infinite; }
+@keyframes timer-pet { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-4px) rotate(1deg); } }
+
 .focus-clock small {
   margin-top: 8px;
   color: var(--muted);
@@ -1616,10 +1749,28 @@ button {
 .focus-clock strong {
   margin-top: 2px;
   font-family: ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
-  font-size: clamp(44px, 14vw, 62px);
+  font-size: clamp(38px, 12vw, 58px);
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
 }
+
+.pomodoro-settings {
+  display: grid;
+  grid-template-columns: 1fr repeat(3, auto);
+  align-items: end;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 13px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand-soft) 62%, var(--surface)), var(--surface));
+  border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
+  border-radius: 20px;
+}
+
+.pomodoro-settings > div { align-self: center; display: grid; gap: 2px; }
+.pomodoro-settings > div strong { font-size: 11px; }
+.pomodoro-settings > div small { color: var(--muted); font-size: 7px; }
+.pomodoro-settings label { display: grid; gap: 4px; color: var(--muted); font-size: 8px; }
+.pomodoro-settings select { min-width: 72px; height: 34px; padding: 0 7px; background: var(--surface); border: 1px solid var(--line); border-radius: 11px; font-size: 9px; }
 
 .pomodoro-card > p {
   margin: 0;
@@ -1958,6 +2109,9 @@ button {
   .pet-avatar img { width: 70px; height: 70px; }
   .pet-copy h1 { font-size: 13px; }
   .pet-focus-button { padding: 6px 10px; }
+  .pomodoro-settings { grid-template-columns: repeat(3, 1fr); }
+  .pomodoro-settings > div { grid-column: 1 / -1; }
+  .pomodoro-settings select { width: 100%; min-width: 0; }
   .bottom-nav { padding-left: 3px; padding-right: 3px; }
   .bottom-nav button span { width: 23px; }
   .focus-orbit { width: min(76vw, 265px); }
