@@ -8,10 +8,10 @@
 
 ## 下载安装
 
-[**下载 Android APK v2.1.0**](https://github.com/Mikewang0801/xiaoqi-plan-offline/releases/download/v2.1.0/xiaoqi-plan-offline-v2.1.0.apk)
+[**下载 Android APK v2.1.1**](https://github.com/Mikewang0801/xiaoqi-plan-offline/releases/download/v2.1.1/xiaoqi-plan-offline-v2.1.1.apk)
 
 - 支持 Android 7.0（API 24）及更高版本
-- SHA-256：`88FAE3A5DD32FE9D55C98CBD8E8914BC56E5D3DCA18359B140422956BEA23B9C`
+- SHA-256：`DB61DFFB1C9BA552DF10BF373780B81763BF294829396C22C2804584EE3AE8E6`
 - 若系统阻止安装，请只为当前文件管理器开启“允许来自此来源”
 - 安装包无联网权限，任务与学习数据只保存在当前设备
 
