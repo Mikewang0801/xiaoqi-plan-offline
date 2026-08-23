@@ -11,7 +11,7 @@ A fully offline, local-first Android study planner and Pomodoro app. Completing 
 [**Download Android APK v2.1.1**](https://github.com/Mikewang0801/xiaoqi-plan-offline/releases/download/v2.1.1/xiaoqi-plan-offline-v2.1.1.apk)
 
 - Requires Android 7.0 (API 24) or later
-- SHA-256: `DB61DFFB1C9BA552DF10BF373780B81763BF294829396C22C2804584EE3AE8E6`
+- SHA-256: `E2495BCFE3F593A28FE84DB9876E8A5D21C9B65BE394CEEE69AE4D1DF96C4072`
 - If Android blocks the installation, allow installs from the current file manager only
 - The APK has no network permission; plans and study data stay on the device
 
@@ -21,8 +21,8 @@ A fully offline, local-first Android study planner and Pomodoro app. Completing 
 - Per-task time tracking and a Pomodoro timer
 - Countdown and count-up focus timers with settings directly on the focus page
 - A sticky weekly date header with horizontal date browsing
-- Frame-by-frame Xiaoqi animations with 10 action groups: breathing/blinking, left/right walking, waving, jumping, sad, waiting, focusing, reviewing, and looking around
-- Tap to wake and interact; Pomodoro sessions and task completion automatically trigger matching actions
+- Xiaoqi is a globally floating frame-animated companion that stays visible and can be dragged across Today, Week, Focus, Statistics, and Settings
+- Tap Xiaoqi to cycle through 10 action groups—breathing/blinking, left/right walking, waving, jumping, sad, waiting, focusing, reviewing, and looking around; dragging never triggers an action
 - Feed Xiaoqi, level up, and maintain a study streak
 - Recurring tasks, automatic rollover, and system notifications
 - Light, dark, and system themes

@@ -121,12 +121,16 @@ type DragState = {
   baseDuration: number;
 };
 
+type PetPosition = { x: number; y: number };
+type PetDragState = PetPosition & { pointerId: number; startX: number; startY: number; moved: boolean };
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
 const STORAGE_KEY = "plan-table-mobile-v2";
+const PET_POSITION_KEY = "xiaoqi-floating-position";
 const REVIEW_API_KEY = "plan-table-review-api";
 const REVIEW_TOKEN_KEY = "plan-table-review-token";
 const AI_ENABLED = false;
@@ -648,7 +652,13 @@ export default function Home() {
   const [drag, setDrag] = useState<DragState | null>(null);
   const [petAwake, setPetAwake] = useState(false);
   const [petAction, setPetAction] = useState<PetAction>("waiting");
-  const [petShowcaseOpen, setPetShowcaseOpen] = useState(false);
+  const [petPosition, setPetPosition] = useState<PetPosition>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(PET_POSITION_KEY) ?? "null") as PetPosition | null;
+      if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) return saved;
+    } catch { /* use the default position */ }
+    return { x: Math.max(12, window.innerWidth - 116), y: Math.max(88, window.innerHeight - 250) };
+  });
   const [toast, setToast] = useState("");
   const [online, setOnline] = useState(true);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -661,6 +671,8 @@ export default function Home() {
   const [reviewToken, setReviewToken] = useState(() => localStorage.getItem(REVIEW_TOKEN_KEY) ?? "");
   const importRef = useRef<HTMLInputElement>(null);
   const petActionTimerRef = useRef<number | null>(null);
+  const petDragRef = useRef<PetDragState | null>(null);
+  const petActionCursorRef = useRef(0);
 
   useEffect(() => {
     try {
@@ -775,6 +787,17 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const clamp = () => setPetPosition((position) => clampPetPosition(position.x, position.y));
+    clamp();
+    window.addEventListener("resize", clamp);
+    return () => window.removeEventListener("resize", clamp);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(PET_POSITION_KEY, JSON.stringify(petPosition));
+  }, [petPosition]);
+
+  useEffect(() => {
     if (!hydrated) return;
     const inspect = () => {
       const now = new Date();
@@ -829,8 +852,6 @@ export default function Home() {
   ).sort((a, b) => b[1] - a[1]);
   const maxCategory = Math.max(1, ...categoryStats.map((item) => item[1]));
   const petLevel = Math.floor(data.pet.food / 5) + 1;
-  const petProgress = data.pet.food % 5;
-  const todayCompleted = data.tasks.filter((task) => task.date === localISODate() && task.completed).length;
   const pomodoroTotal = Math.max(1, pomodoroDuration(data.pomodoro));
   const pomodoroDisplaySeconds = data.pomodoro.direction === "stopwatch" ? data.pomodoro.elapsedSeconds : data.pomodoro.remainingSeconds;
   const pomodoroProgress = Math.max(0, Math.min(1, data.pomodoro.direction === "stopwatch"
@@ -948,8 +969,6 @@ export default function Home() {
       };
     });
     if (willFeed) {
-      setPetAwake(true);
-      playPetAction("jump", 2100);
       setToast("任务完成！小淇收到一份小鱼干 ♡");
     }
   }
@@ -1104,16 +1123,41 @@ export default function Home() {
   }
 
   function wakePet() {
-    if (!petAwake) {
-      setPetAwake(true);
-      playPetAction("wave", 2100);
-      setToast(dayTasks.length ? `小淇醒啦！今天有 ${dayTasks.length} 项计划，一起稳稳完成` : "小淇醒啦！先为今天安排一项小计划吧");
-      return;
-    }
-    const actions: PetAction[] = ["wave", "jump", "look", "review", "runRight", "runLeft"];
-    const action = actions[Math.floor(Math.random() * actions.length)];
+    const actions: PetAction[] = ["wave", "jump", "runRight", "runLeft", "sad", "waiting", "focus", "review", "look", "idle"];
+    const action = actions[petActionCursorRef.current % actions.length];
+    petActionCursorRef.current += 1;
+    setPetAwake(true);
     playPetAction(action, action === "look" ? 2900 : 1900);
-    setToast(`小淇正在表演“${PET_ACTIONS.find((item) => item.id === action)?.label}”`);
+    setToast(`小淇：${PET_ACTIONS.find((item) => item.id === action)?.label}！拖动我可以去任何页面`);
+  }
+
+  function clampPetPosition(x: number, y: number): PetPosition {
+    return {
+      x: Math.max(8, Math.min(window.innerWidth - 104, x)),
+      y: Math.max(70, Math.min(window.innerHeight - 190, y)),
+    };
+  }
+
+  function petPointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    petDragRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, x: petPosition.x, y: petPosition.y, moved: false };
+  }
+
+  function petPointerMove(event: ReactPointerEvent<HTMLButtonElement>) {
+    const dragState = petDragRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+    const dx = event.clientX - dragState.startX;
+    const dy = event.clientY - dragState.startY;
+    if (Math.abs(dx) + Math.abs(dy) > 6) dragState.moved = true;
+    setPetPosition(clampPetPosition(dragState.x + dx, dragState.y + dy));
+  }
+
+  function petPointerEnd(event: ReactPointerEvent<HTMLButtonElement>, cancelled = false) {
+    const dragState = petDragRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+    petDragRef.current = null;
+    if (!cancelled && !dragState.moved) wakePet();
   }
 
   function selectReviewFiles(files: FileList | null, kind: "review" | "knowledge") {
@@ -1315,34 +1359,6 @@ export default function Home() {
               <button onClick={() => setCurrentDate(addDays(currentDate, 1))}>›</button>
             </div>
 
-            <section className={`pet-card ${petAwake ? "awake" : "sleeping"}`}>
-              <button className="pet-avatar" type="button" onClick={wakePet} aria-label={petAwake ? "和小淇互动" : "唤醒小淇"}>
-                <span className="pet-sparkles" aria-hidden="true">✦</span>
-                <PetSprite action={petAwake ? petAction : "waiting"} label={`小淇正在${PET_ACTIONS.find((item) => item.id === (petAwake ? petAction : "waiting"))?.label}`} />
-                <span className="pet-level">Lv.{petLevel}</span>
-                {!petAwake && <span className="pet-sleep" aria-hidden="true">Zzz</span>}
-              </button>
-              <div className="pet-copy">
-                <span className="eyebrow">STUDY BUDDY</span>
-                <h1>{!petAwake ? "点一下唤醒小淇" : todayCompleted ? `小淇今天吃到 ${todayCompleted} 份小鱼干` : "小淇准备好陪你学习啦"}</h1>
-                <p>{!petAwake ? "让小淇用元气问候陪你开启今天。" : data.pet.streak ? `已经连续打卡 ${data.pet.streak} 天，完成任务就能继续投喂。` : `今天有 ${dayTasks.length} 项计划，完成一项就能投喂小淇。`}</p>
-                <div className="pet-progress"><i style={{ width: `${petProgress / 5 * 100}%` }} /><span>{petProgress}/5 距离升级</span></div>
-              </div>
-              <div className="pet-card-actions">
-                <button className="pet-focus-button" onClick={() => setView("pomodoro")}>去专注</button>
-                <button className="pet-action-button" onClick={() => setPetShowcaseOpen((open) => !open)}>{petShowcaseOpen ? "收起动作" : "10 组动作"}</button>
-              </div>
-              {petShowcaseOpen && (
-                <div className="pet-action-panel" aria-label="小淇基础动作">
-                  {PET_ACTIONS.map((action) => (
-                    <button key={action.id} className={petAction === action.id ? "active" : ""} onClick={() => { setPetAwake(true); playPetAction(action.id, action.id === "look" ? 3000 : 2100); }}>
-                      <span>{action.icon}</span><small>{action.label}</small>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </section>
-
             <div className="summary-card">
               <div><span>计划</span><strong>{dayTasks.length}</strong><small>项任务</small></div>
               <div><span>完成</span><strong>{dayTasks.filter((task) => task.completed).length}</strong><small>{dayTasks.length ? `${Math.round(dayTasks.filter((task) => task.completed).length / dayTasks.length * 100)}%` : "0%"}</small></div>
@@ -1460,7 +1476,7 @@ export default function Home() {
             <section className="pomodoro-card">
               <div className="focus-orbit" style={{ "--progress": `${pomodoroProgress * 360}deg` } as React.CSSProperties}>
                 <div className="focus-clock">
-                  <PetSprite action={data.pomodoro.running ? (data.pomodoro.mode === "focus" ? "focus" : "idle") : "waiting"} className="timer-pet" label="专注中的动态小淇" />
+                  <span className="tomato-mark" aria-hidden="true">🍅</span>
                   <small>{data.pomodoro.direction === "stopwatch" ? "正向计时" : data.pomodoro.mode === "focus" ? "专注中" : "休息一下"}</small>
                   <strong>{timerText(pomodoroDisplaySeconds)}</strong>
                 </div>
@@ -1587,6 +1603,26 @@ export default function Home() {
       )}
 
       {(view === "today" || view === "week") && <button className="fab" onClick={() => openNew()} aria-label="新建任务">＋</button>}
+
+      <aside className={`floating-pet ${petAwake ? "awake" : "sleeping"}`} style={{ transform: `translate3d(${petPosition.x}px, ${petPosition.y}px, 0)` }}>
+        <button
+          className="floating-pet-handle"
+          type="button"
+          aria-label="拖动小淇改变位置，点击触发动作"
+          onPointerDown={petPointerDown}
+          onPointerMove={petPointerMove}
+          onPointerUp={(event) => petPointerEnd(event)}
+          onPointerCancel={(event) => petPointerEnd(event, true)}
+          onClick={(event) => { if (event.detail === 0) wakePet(); }}
+        >
+          <span className="floating-pet-bubble">{petAwake ? PET_ACTIONS.find((item) => item.id === petAction)?.label : "点我唤醒"}</span>
+          <span className="pet-sparkles" aria-hidden="true">✦</span>
+          <PetSprite action={petAwake ? petAction : "waiting"} label={`小淇正在${PET_ACTIONS.find((item) => item.id === (petAwake ? petAction : "waiting"))?.label}`} />
+          <span className="pet-level">Lv.{petLevel}</span>
+          {!petAwake && <span className="pet-sleep" aria-hidden="true">Zzz</span>}
+          <span className="floating-pet-hint">拖动我</span>
+        </button>
+      </aside>
 
       <nav className={`bottom-nav ${AI_ENABLED ? "online" : "offline"}`}>
         {([
