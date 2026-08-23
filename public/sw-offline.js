@@ -1,5 +1,5 @@
-const CACHE_NAME = "xiaoqi-plan-offline-v2";
-const APP_SHELL = ["/", "/manifest-offline.webmanifest", "/icon-192.png", "/icon-512.png"];
+const CACHE_NAME = "xiaoqi-plan-offline-v3";
+const APP_SHELL = ["/", "/manifest-offline.webmanifest", "/icon-192.png", "/icon-512.png", "/pet/xiaoqi-spritesheet.webp"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));

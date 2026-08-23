@@ -1,4 +1,5 @@
 node_modules/
+pet-run-v2.1/
 dist/
 .gradle/
 *.tsbuildinfo

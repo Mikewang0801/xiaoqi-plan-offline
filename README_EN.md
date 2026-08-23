@@ -11,7 +11,7 @@ A fully offline, local-first Android study planner and Pomodoro app. Completing 
 [**Download Android APK v2.1.0**](https://github.com/Mikewang0801/xiaoqi-plan-offline/releases/download/v2.1.0/xiaoqi-plan-offline-v2.1.0.apk)
 
 - Requires Android 7.0 (API 24) or later
-- SHA-256: `D722D780202AD68D3BD1A9EFA78DB784BDC1AF46F68D8E31B189C1339AF6A32D`
+- SHA-256: `88FAE3A5DD32FE9D55C98CBD8E8914BC56E5D3DCA18359B140422956BEA23B9C`
 - If Android blocks the installation, allow installs from the current file manager only
 - The APK has no network permission; plans and study data stay on the device
 
@@ -21,7 +21,8 @@ A fully offline, local-first Android study planner and Pomodoro app. Completing 
 - Per-task time tracking and a Pomodoro timer
 - Countdown and count-up focus timers with settings directly on the focus page
 - A sticky weekly date header with horizontal date browsing
-- Tap-to-wake animated Xiaoqi with a celebration after task completion
+- Frame-by-frame Xiaoqi animations with 10 action groups: breathing/blinking, left/right walking, waving, jumping, sad, waiting, focusing, reviewing, and looking around
+- Tap to wake and interact; Pomodoro sessions and task completion automatically trigger matching actions
 - Feed Xiaoqi, level up, and maintain a study streak
 - Recurring tasks, automatic rollover, and system notifications
 - Light, dark, and system themes
@@ -94,6 +95,7 @@ Use your own private keystore for production releases. Never commit a certificat
 xiaoqi-plan-offline/
 ├─ src/                         React application source
 ├─ public/                      Offline PWA assets
+│  └─ pet/                     Xiaoqi animation atlas
 ├─ assets/                      Icon and splash source files
 ├─ android/                     Native Android project
 ├─ 构建离线版.ps1               Windows build script

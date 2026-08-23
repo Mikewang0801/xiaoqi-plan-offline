@@ -1,0 +1,12 @@
+{
+  "id": "xiaoqi",
+  "displayName": "小淇",
+  "description": "陪伴学习、专注和复盘的可爱橘白猫咪",
+  "spriteVersionNumber": 2,
+  "spritesheetPath": "xiaoqi-spritesheet.webp",
+  "columns": 8,
+  "rows": 11,
+  "cellWidth": 192,
+  "cellHeight": 208,
+  "actionGroups": 10
+}

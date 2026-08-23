@@ -8,6 +8,7 @@ type Theme = "light" | "dark" | "system";
 type ViewName = "today" | "week" | "pomodoro" | "review" | "history" | "stats" | "settings";
 type PomodoroMode = "focus" | "short" | "long";
 type TimerDirection = "countdown" | "stopwatch";
+type PetAction = "idle" | "runRight" | "runLeft" | "wave" | "jump" | "sad" | "waiting" | "focus" | "review" | "look";
 
 type MindNode = {
   label: string;
@@ -137,6 +138,32 @@ const PIXELS_PER_MINUTE = 0.72;
 const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
 const CATEGORIES = ["默认", "工作", "学习", "生活", "运动"];
 const COLORS = ["#EF858A", "#72B79D", "#F2B45F", "#8DA9D6", "#B598D0", "#E58A69"];
+
+const PET_ANIMATIONS: Record<PetAction, { row: number; frames: number; durations: number[] }> = {
+  idle: { row: 0, frames: 6, durations: [280, 110, 110, 140, 140, 320] },
+  runRight: { row: 1, frames: 8, durations: [120, 120, 120, 120, 120, 120, 120, 220] },
+  runLeft: { row: 2, frames: 8, durations: [120, 120, 120, 120, 120, 120, 120, 220] },
+  wave: { row: 3, frames: 4, durations: [140, 140, 140, 280] },
+  jump: { row: 4, frames: 5, durations: [140, 140, 140, 140, 280] },
+  sad: { row: 5, frames: 8, durations: [140, 140, 140, 140, 140, 140, 140, 240] },
+  waiting: { row: 6, frames: 6, durations: [150, 150, 150, 150, 150, 260] },
+  focus: { row: 7, frames: 6, durations: [120, 120, 120, 120, 120, 220] },
+  review: { row: 8, frames: 6, durations: [150, 150, 150, 150, 150, 280] },
+  look: { row: 9, frames: 16, durations: Array(16).fill(170) },
+};
+
+const PET_ACTIONS: { id: PetAction; icon: string; label: string }[] = [
+  { id: "idle", icon: "♡", label: "呼吸眨眼" },
+  { id: "runRight", icon: "→", label: "向右散步" },
+  { id: "runLeft", icon: "←", label: "向左散步" },
+  { id: "wave", icon: "👋", label: "招手问候" },
+  { id: "jump", icon: "↑", label: "开心跳跃" },
+  { id: "sad", icon: "☁", label: "失落安慰" },
+  { id: "waiting", icon: "…", label: "等待陪伴" },
+  { id: "focus", icon: "✎", label: "专注学习" },
+  { id: "review", icon: "✓", label: "复盘检查" },
+  { id: "look", icon: "◉", label: "环顾四周" },
+];
 
 const DEFAULT_PET: PetState = { name: "小淇", food: 0, streak: 0, lastFedDate: "", fedTaskIds: [] };
 const DEFAULT_POMODORO: PomodoroState = {
@@ -581,6 +608,31 @@ function desktopBackup(input: AppState) {
   };
 }
 
+function PetSprite({ action, className = "", label = "动态小淇" }: { action: PetAction; className?: string; label?: string }) {
+  const animation = PET_ANIMATIONS[action];
+  const [frame, setFrame] = useState(0);
+
+  useEffect(() => {
+    setFrame(0);
+  }, [action]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setFrame((value) => (value + 1) % animation.frames), animation.durations[frame] ?? 160);
+    return () => window.clearTimeout(timer);
+  }, [animation, frame]);
+
+  const row = action === "look" && frame >= 8 ? 10 : animation.row;
+  const column = action === "look" ? frame % 8 : frame;
+  return (
+    <span
+      className={`pet-sprite ${className}`.trim()}
+      role="img"
+      aria-label={label}
+      style={{ backgroundPosition: `${column * 100 / 7}% ${row * 10}%` }}
+    />
+  );
+}
+
 export default function Home() {
   const isNative = Capacitor.isNativePlatform();
   const [data, setData] = useState<AppState>(DEFAULT_STATE);
@@ -595,7 +647,8 @@ export default function Home() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [petAwake, setPetAwake] = useState(false);
-  const [petCheering, setPetCheering] = useState(false);
+  const [petAction, setPetAction] = useState<PetAction>("waiting");
+  const [petShowcaseOpen, setPetShowcaseOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [online, setOnline] = useState(true);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -607,6 +660,7 @@ export default function Home() {
   const [reviewApiUrl, setReviewApiUrl] = useState(() => localStorage.getItem(REVIEW_API_KEY) ?? import.meta.env.VITE_REVIEW_API_URL ?? "");
   const [reviewToken, setReviewToken] = useState(() => localStorage.getItem(REVIEW_TOKEN_KEY) ?? "");
   const importRef = useRef<HTMLInputElement>(null);
+  const petActionTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     try {
@@ -716,11 +770,9 @@ export default function Home() {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  useEffect(() => {
-    if (!petCheering) return;
-    const timer = window.setTimeout(() => setPetCheering(false), 1400);
-    return () => window.clearTimeout(timer);
-  }, [petCheering]);
+  useEffect(() => () => {
+    if (petActionTimerRef.current !== null) window.clearTimeout(petActionTimerRef.current);
+  }, []);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -874,6 +926,16 @@ export default function Home() {
     setToast(editingId === "new" ? "任务已创建" : "任务已更新");
   }
 
+  function playPetAction(action: PetAction, duration = 1900) {
+    if (petActionTimerRef.current !== null) window.clearTimeout(petActionTimerRef.current);
+    setPetAction(action);
+    if (action === "idle" || action === "waiting") return;
+    petActionTimerRef.current = window.setTimeout(() => {
+      setPetAction("idle");
+      petActionTimerRef.current = null;
+    }, duration);
+  }
+
   function toggleComplete(taskId: string) {
     const willFeed = data.tasks.some((task) => task.id === taskId && !task.completed && !data.pet.fedTaskIds.includes(taskId));
     setData((previous) => {
@@ -887,7 +949,7 @@ export default function Home() {
     });
     if (willFeed) {
       setPetAwake(true);
-      setPetCheering(true);
+      playPetAction("jump", 2100);
       setToast("任务完成！小淇收到一份小鱼干 ♡");
     }
   }
@@ -1042,9 +1104,16 @@ export default function Home() {
   }
 
   function wakePet() {
-    setPetAwake(true);
-    setPetCheering(true);
-    setToast(dayTasks.length ? `小淇醒啦！今天有 ${dayTasks.length} 项计划，一起稳稳完成` : "小淇醒啦！先为今天安排一项小计划吧");
+    if (!petAwake) {
+      setPetAwake(true);
+      playPetAction("wave", 2100);
+      setToast(dayTasks.length ? `小淇醒啦！今天有 ${dayTasks.length} 项计划，一起稳稳完成` : "小淇醒啦！先为今天安排一项小计划吧");
+      return;
+    }
+    const actions: PetAction[] = ["wave", "jump", "look", "review", "runRight", "runLeft"];
+    const action = actions[Math.floor(Math.random() * actions.length)];
+    playPetAction(action, action === "look" ? 2900 : 1900);
+    setToast(`小淇正在表演“${PET_ACTIONS.find((item) => item.id === action)?.label}”`);
   }
 
   function selectReviewFiles(files: FileList | null, kind: "review" | "knowledge") {
@@ -1246,10 +1315,10 @@ export default function Home() {
               <button onClick={() => setCurrentDate(addDays(currentDate, 1))}>›</button>
             </div>
 
-            <section className={`pet-card ${petAwake ? "awake" : "sleeping"} ${petCheering ? "cheering" : ""}`}>
+            <section className={`pet-card ${petAwake ? "awake" : "sleeping"}`}>
               <button className="pet-avatar" type="button" onClick={wakePet} aria-label={petAwake ? "和小淇互动" : "唤醒小淇"}>
                 <span className="pet-sparkles" aria-hidden="true">✦</span>
-                <img src="/icon-192.png" alt="小淇猫咪" />
+                <PetSprite action={petAwake ? petAction : "waiting"} label={`小淇正在${PET_ACTIONS.find((item) => item.id === (petAwake ? petAction : "waiting"))?.label}`} />
                 <span className="pet-level">Lv.{petLevel}</span>
                 {!petAwake && <span className="pet-sleep" aria-hidden="true">Zzz</span>}
               </button>
@@ -1259,7 +1328,19 @@ export default function Home() {
                 <p>{!petAwake ? "让小淇用元气问候陪你开启今天。" : data.pet.streak ? `已经连续打卡 ${data.pet.streak} 天，完成任务就能继续投喂。` : `今天有 ${dayTasks.length} 项计划，完成一项就能投喂小淇。`}</p>
                 <div className="pet-progress"><i style={{ width: `${petProgress / 5 * 100}%` }} /><span>{petProgress}/5 距离升级</span></div>
               </div>
-              <button className="pet-focus-button" onClick={() => setView("pomodoro")}>去专注</button>
+              <div className="pet-card-actions">
+                <button className="pet-focus-button" onClick={() => setView("pomodoro")}>去专注</button>
+                <button className="pet-action-button" onClick={() => setPetShowcaseOpen((open) => !open)}>{petShowcaseOpen ? "收起动作" : "10 组动作"}</button>
+              </div>
+              {petShowcaseOpen && (
+                <div className="pet-action-panel" aria-label="小淇基础动作">
+                  {PET_ACTIONS.map((action) => (
+                    <button key={action.id} className={petAction === action.id ? "active" : ""} onClick={() => { setPetAwake(true); playPetAction(action.id, action.id === "look" ? 3000 : 2100); }}>
+                      <span>{action.icon}</span><small>{action.label}</small>
+                    </button>
+                  ))}
+                </div>
+              )}
             </section>
 
             <div className="summary-card">
@@ -1379,7 +1460,7 @@ export default function Home() {
             <section className="pomodoro-card">
               <div className="focus-orbit" style={{ "--progress": `${pomodoroProgress * 360}deg` } as React.CSSProperties}>
                 <div className="focus-clock">
-                  <img className={data.pomodoro.running ? "timer-pet-awake" : ""} src="/icon-192.png" alt="专注中的小淇" />
+                  <PetSprite action={data.pomodoro.running ? (data.pomodoro.mode === "focus" ? "focus" : "idle") : "waiting"} className="timer-pet" label="专注中的动态小淇" />
                   <small>{data.pomodoro.direction === "stopwatch" ? "正向计时" : data.pomodoro.mode === "focus" ? "专注中" : "休息一下"}</small>
                   <strong>{timerText(pomodoroDisplaySeconds)}</strong>
                 </div>

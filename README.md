@@ -11,7 +11,7 @@
 [**下载 Android APK v2.1.0**](https://github.com/Mikewang0801/xiaoqi-plan-offline/releases/download/v2.1.0/xiaoqi-plan-offline-v2.1.0.apk)
 
 - 支持 Android 7.0（API 24）及更高版本
-- SHA-256：`D722D780202AD68D3BD1A9EFA78DB784BDC1AF46F68D8E31B189C1339AF6A32D`
+- SHA-256：`88FAE3A5DD32FE9D55C98CBD8E8914BC56E5D3DCA18359B140422956BEA23B9C`
 - 若系统阻止安装，请只为当前文件管理器开启“允许来自此来源”
 - 安装包无联网权限，任务与学习数据只保存在当前设备
 
@@ -21,7 +21,8 @@
 - 单任务累计计时与番茄钟
 - 番茄钟支持倒计时与正向计时，时长可在专注页直接调整
 - 周表日期栏固定，支持左右滑动浏览日期
-- 点击唤醒动态小淇，完成任务触发庆祝动作
+- 小淇采用逐帧动画图集，支持呼吸眨眼、左右行走、招手、跳跃、失落、等待、专注、复盘和环视 10 组基础动作
+- 点击唤醒并随机互动；开始番茄专注、完成任务等场景会自动触发对应动作
 - 小淇投喂、等级成长和连续打卡
 - 重复任务、自动顺延与系统通知
 - 浅色、深色及跟随系统主题
@@ -94,6 +95,7 @@ build-output/xiaoqi-plan-offline-debug.apk
 xiaoqi-plan-offline/
 ├─ src/                         React 应用源码
 ├─ public/                      离线 PWA 资源
+│  └─ pet/                     小淇动态动作图集
 ├─ assets/                      图标和启动图源文件
 ├─ android/                     Android 原生工程
 ├─ 构建离线版.ps1               Windows 一键构建脚本
