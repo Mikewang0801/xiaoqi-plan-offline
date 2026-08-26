@@ -2,7 +2,7 @@
 
 [简体中文](README.md) | [English](README_EN.md)
 
-一款完全离线、本地优先的 Android 学习计划与番茄专注应用。完成任务可以投喂小猫“小淇”，让日常学习更有陪伴感。
+一款完全离线、本地优先的 Android 与 iOS 学习计划及番茄专注应用。完成任务可以投喂小猫“小淇”，让日常学习更有陪伴感。
 
 ![小淇计划图标](assets/icon.png)
 
@@ -14,6 +14,8 @@
 - SHA-256：`E2495BCFE3F593A28FE84DB9876E8A5D21C9B65BE394CEEE69AE4D1DF96C4072`
 - 若系统阻止安装，请只为当前文件管理器开启“允许来自此来源”
 - 安装包无联网权限，任务与学习数据只保存在当前设备
+
+iPhone 不能安装 APK。本仓库已包含 V2.1.1 的 iOS/Xcode 工程；iOS 安装包必须在 macOS 上使用 Xcode 和 Apple 签名证书生成，当前 Release 暂不提供通用签名 IPA。
 
 ## 功能特色
 
@@ -38,7 +40,7 @@
 
 - 在线学习复盘 API
 - 大模型或第三方服务密钥
-- Android 发布证书及口令
+- Android 发布证书、Apple 签名证书、描述文件及口令
 - 用户计划、笔记或备份数据
 
 ## 技术栈
@@ -47,6 +49,7 @@
 - Capacitor 8
 - Android Gradle Plugin 8.13
 - Android：最低 API 24，目标 API 36
+- iOS：最低 iOS 15，Xcode 工程版本 2.1.1（Build 211）
 
 ## 本地运行
 
@@ -89,6 +92,18 @@ build-output/xiaoqi-plan-offline-debug.apk
 
 正式发布时请使用自己的私有 keystore 签名，证书及口令不要提交到仓库。
 
+## iOS 构建
+
+iOS 工程必须在 macOS 上构建，需要 Xcode 16 或更高版本以及有效的 Apple 开发者签名配置。
+
+```bash
+npm ci
+npm run ios
+open ios/App/App.xcodeproj
+```
+
+在 Xcode 的 `Signing & Capabilities` 中选择自己的 Team，并确认 Bundle Identifier 唯一，然后连接 iPhone 运行；发布 IPA 时使用 `Product > Archive`。仓库不会提交签名证书或 Provisioning Profile。
+
 ## 项目结构
 
 ```text
@@ -98,6 +113,7 @@ xiaoqi-plan-offline/
 │  └─ pet/                     小淇动态动作图集
 ├─ assets/                      图标和启动图源文件
 ├─ android/                     Android 原生工程
+├─ ios/                         iOS/Xcode 原生工程
 ├─ 构建离线版.ps1               Windows 一键构建脚本
 └─ 准备本地Android工具链.ps1    可选的本地工具链准备脚本
 ```

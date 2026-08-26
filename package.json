@@ -7,11 +7,13 @@
     "dev": "vite --mode offline",
     "build": "tsc --noEmit && vite build --mode offline",
     "android": "npm run build && cap sync android",
+    "ios": "npm run build && cap sync ios",
     "android:debug": "powershell -ExecutionPolicy Bypass -File ./构建离线版.ps1"
   },
   "dependencies": {
     "@capacitor/android": "8.5.0",
     "@capacitor/core": "8.5.0",
+    "@capacitor/ios": "8.5.0",
     "@capacitor/local-notifications": "8.0.0",
     "react": "19.2.6",
     "react-dom": "19.2.6"

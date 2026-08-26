@@ -2,7 +2,7 @@
 
 [简体中文](README.md) | [English](README_EN.md)
 
-A fully offline, local-first Android study planner and Pomodoro app. Completing a task feeds Xiaoqi, a little cat companion that grows with your study streak.
+A fully offline, local-first Android and iOS study planner and Pomodoro app. Completing a task feeds Xiaoqi, a little cat companion that grows with your study streak.
 
 ![Xiaoqi Plan icon](assets/icon.png)
 
@@ -14,6 +14,8 @@ A fully offline, local-first Android study planner and Pomodoro app. Completing 
 - SHA-256: `E2495BCFE3F593A28FE84DB9876E8A5D21C9B65BE394CEEE69AE4D1DF96C4072`
 - If Android blocks the installation, allow installs from the current file manager only
 - The APK has no network permission; plans and study data stay on the device
+
+iPhone cannot install APK files. This repository includes the V2.1.1 iOS/Xcode project. An iOS package must be built and signed on macOS with Xcode and Apple signing credentials; the current Release does not provide a universally signed IPA.
 
 ## Features
 
@@ -38,7 +40,7 @@ This repository does not contain:
 
 - The online study-review API
 - Model or third-party service keys
-- Android release certificates or passwords
+- Android release certificates, Apple signing certificates, provisioning profiles, or passwords
 - User plans, notes, or backup data
 
 ## Tech Stack
@@ -47,6 +49,7 @@ This repository does not contain:
 - Capacitor 8
 - Android Gradle Plugin 8.13
 - Android: minimum API 24, target API 36
+- iOS: minimum iOS 15, Xcode project version 2.1.1 (build 211)
 
 ## Run Locally
 
@@ -89,6 +92,18 @@ build-output/xiaoqi-plan-offline-debug.apk
 
 Use your own private keystore for production releases. Never commit a certificate or its passwords.
 
+## Build for iOS
+
+The iOS project must be built on macOS with Xcode 16 or later and a valid Apple signing configuration.
+
+```bash
+npm ci
+npm run ios
+open ios/App/App.xcodeproj
+```
+
+Choose your Team in Xcode under `Signing & Capabilities`, ensure the Bundle Identifier is unique, and run on a connected iPhone. Use `Product > Archive` to create a distributable IPA. Signing certificates and provisioning profiles are intentionally excluded from the repository.
+
 ## Project Layout
 
 ```text
@@ -98,6 +113,7 @@ xiaoqi-plan-offline/
 │  └─ pet/                     Xiaoqi animation atlas
 ├─ assets/                      Icon and splash source files
 ├─ android/                     Native Android project
+├─ ios/                         Native iOS/Xcode project
 ├─ 构建离线版.ps1               Windows build script
 └─ 准备本地Android工具链.ps1    Optional toolchain setup script
 ```
